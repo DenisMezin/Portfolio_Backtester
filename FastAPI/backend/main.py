@@ -1,12 +1,15 @@
 import base64
 import io
+import json
 from datetime import datetime
+from io import StringIO
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, conlist
 import yfinance as yf
 
@@ -193,20 +196,136 @@ def fig_to_base64(fig) -> str:
 
 # --- Endpoint dell'API ---
 
+@app.get("/", summary="Endpoint root")
+async def root():
+    """
+    Endpoint root che fornisce informazioni sull'API.
+    """
+    return {
+        "message": "Portfolio Backtesting API",
+        "version": "1.0.0",
+        "endpoints": {
+            "tickers": "/api/tickers",
+            "ticker_info": "/api/ticker-info/{ticker}",
+            "backtest": "/api/backtest",
+            "docs": "/docs"
+        }
+    }
+
+@app.post("/api/export-csv", summary="Esporta i risultati in formato CSV")
+async def export_results_csv(payload: PortfolioPayload):
+    """
+    Esporta i risultati del backtesting in formato CSV.
+    """
+    config = payload.config
+    etf_data = load_and_process_data(payload.etfs, config.start_date, config.end_date)
+    benchmark_data = load_and_process_data(payload.benchmark, config.start_date, config.end_date)
+
+    # Allineamento delle date
+    common_start = max(etf_data.index.min(), benchmark_data.index.min())
+    common_end = min(etf_data.index.max(), benchmark_data.index.max())
+    etf_data = etf_data.loc[common_start:common_end].dropna()
+    benchmark_data = benchmark_data.loc[common_start:common_end].dropna()
+
+    if etf_data.empty or benchmark_data.empty:
+        raise HTTPException(status_code=400, detail="Dati insufficienti per l'export.")
+
+    # Calcolo dei rendimenti
+    etf_weights = np.array([etf.weight for etf in payload.etfs])
+    etf_weights /= np.sum(etf_weights)
+    benchmark_weights = np.array([b.weight for b in payload.benchmark])
+    benchmark_weights /= np.sum(benchmark_weights)
+    
+    if config.rebalance_frequency != "none":
+        portfolio_returns = apply_rebalancing(etf_data, etf_weights, config.rebalance_frequency, config.transaction_cost)
+        if len(benchmark_data.columns) == 1:
+            benchmark_returns = benchmark_data.iloc[:, 0].pct_change().dropna()
+        else:
+            benchmark_returns = apply_rebalancing(benchmark_data, benchmark_weights, config.rebalance_frequency, config.transaction_cost)
+    else:
+        portfolio_returns = (etf_data.pct_change().dropna() * etf_weights).sum(axis=1)
+        if len(benchmark_data.columns) == 1:
+            benchmark_returns = benchmark_data.iloc[:, 0].pct_change().dropna()
+        else:
+            benchmark_returns = (benchmark_data.pct_change().dropna() * benchmark_weights).sum(axis=1)
+
+    # Creazione del DataFrame per l'export
+    portfolio_cumulative = (1 + portfolio_returns).cumprod() * config.initial_investment
+    benchmark_cumulative = (1 + benchmark_returns).cumprod() * config.initial_investment
+    
+    export_data = pd.DataFrame({
+        'Date': portfolio_cumulative.index.strftime('%Y-%m-%d'),
+        'Portfolio_Value': portfolio_cumulative.values,
+        'Portfolio_Returns': portfolio_returns.values * 100,
+        'Benchmark_Value': benchmark_cumulative.values,
+        'Benchmark_Returns': benchmark_returns.values * 100,
+        'Outperformance': portfolio_cumulative.values - benchmark_cumulative.values
+    })
+    
+    # Conversione in CSV
+    csv_buffer = StringIO()
+    export_data.to_csv(csv_buffer, index=False)
+    csv_content = csv_buffer.getvalue()
+    
+    return StreamingResponse(
+        io.BytesIO(csv_content.encode()),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=backtest_results.csv"}
+    )
+
+@app.get("/api/health", summary="Health check")
+async def health_check():
+    """
+    Endpoint per verificare che l'API sia funzionante.
+    """
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "message": "Portfolio Backtesting API is running"
+    }
+
+@app.get("/api/ticker-info/{ticker}", summary="Ottiene informazioni dettagliate su un ticker")
+async def get_ticker_info(ticker: str):
+    """
+    Restituisce informazioni dettagliate su un ticker specifico.
+    """
+    try:
+        stock = yf.Ticker(ticker)
+        info = stock.info
+        
+        return {
+            "ticker": ticker,
+            "name": info.get('longName', ticker),
+            "sector": info.get('sector', 'N/A'),
+            "industry": info.get('industry', 'N/A'),
+            "summary": info.get('longBusinessSummary', 'N/A')[:200] + '...' if info.get('longBusinessSummary') else 'N/A',
+            "currency": info.get('currency', 'USD'),
+            "exchange": info.get('exchange', 'N/A'),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Errore nel recupero informazioni per {ticker}: {e}")
+
 @app.get("/api/tickers", summary="Ottiene la lista dei ticker popolari")
 async def get_popular_tickers():
     """
     Restituisce una lista di ticker ETF popolari organizzati per categoria.
     """
     tickers = {
-        "US Total Market": ["VTI", "ITOT", "SPTM", "VT"],
-        "S&P 500": ["SPY", "VOO", "IVV", "SPLG"],
-        "International Developed": ["VXUS", "FTIHX", "IEFA", "VEA"],
-        "Emerging Markets": ["VWO", "IEMG", "EEM", "FTEC"],
-        "Bonds": ["BND", "AGG", "VBTLX", "TLT"],
-        "Real Estate": ["VNQ", "REIT", "SCHH", "IYR"],
-        "Technology": ["QQQ", "VGT", "XLK", "FTEC"],
-        "Small Cap": ["VB", "IWM", "VTWO", "SCHA"]
+        "US Total Market": ["VTI", "ITOT", "SPTM", "VT", "FZROX"],
+        "S&P 500": ["SPY", "VOO", "IVV", "SPLG", "FXAIX"],
+        "International Developed": ["VXUS", "FTIHX", "IEFA", "VEA", "FZILX"],
+        "Emerging Markets": ["VWO", "IEMG", "EEM", "FTEC", "FPADX"],
+        "Bonds": ["BND", "AGG", "VBTLX", "TLT", "FXNAX"],
+        "Real Estate": ["VNQ", "REIT", "SCHH", "IYR", "FREL"],
+        "Technology": ["QQQ", "VGT", "XLK", "FTEC", "FSELX"], 
+        "Small Cap": ["VB", "IWM", "VTWO", "SCHA", "FSMDX"],
+        "Value": ["VTV", "VBR", "VMOT", "IWD", "FVAL"],
+        "Growth": ["VUG", "VOOG", "IWF", "VBK", "FSPGX"],
+        "Dividend": ["VYM", "NOBL", "SCHD", "HDV", "FDVV"],
+        "International Bonds": ["BNDX", "VTEB", "IAGG", "FXNAX"],
+        "Commodities": ["DJP", "PDBC", "GSG", "DBA", "FCOM"],
+        "Gold": ["GLD", "IAU", "SGOL", "AAAU"],
+        "Crypto": ["BITO", "GBTC", "ETHE"]
     }
     
     # Lista piatta di tutti i ticker
@@ -248,10 +367,18 @@ async def backtest_portfolio(payload: PortfolioPayload):
     # Applica ribilanciamento se specificato
     if config.rebalance_frequency != "none":
         portfolio_returns = apply_rebalancing(etf_data, etf_weights, config.rebalance_frequency, config.transaction_cost)
-        benchmark_returns = apply_rebalancing(benchmark_data, benchmark_weights, config.rebalance_frequency, config.transaction_cost)
+        # Per il benchmark, tratta come portafoglio singolo o multiplo
+        if len(benchmark_data.columns) == 1:
+            benchmark_returns = benchmark_data.iloc[:, 0].pct_change().dropna()
+        else:
+            benchmark_returns = apply_rebalancing(benchmark_data, benchmark_weights, config.rebalance_frequency, config.transaction_cost)
     else:
         portfolio_returns = (etf_data.pct_change().dropna() * etf_weights).sum(axis=1)
-        benchmark_returns = (benchmark_data.pct_change().dropna() * benchmark_weights).sum(axis=1)
+        # Per il benchmark, tratta come portafoglio singolo o multiplo  
+        if len(benchmark_data.columns) == 1:
+            benchmark_returns = benchmark_data.iloc[:, 0].pct_change().dropna()
+        else:
+            benchmark_returns = (benchmark_data.pct_change().dropna() * benchmark_weights).sum(axis=1)
 
     # Calcolo performance cumulativa
     portfolio_cumulative_returns = (1 + portfolio_returns).cumprod() * config.initial_investment
