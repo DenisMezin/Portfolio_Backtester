@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+sqlalchemy
+pydantic
+axios
+pandas
+matplotlib
+numpy
+scikit-learn
+yahoo-finance
+yfinance
+statsmodels
+
+#nodejs
+#npm
+#npx

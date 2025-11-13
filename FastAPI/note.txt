@@ -1,0 +1,24 @@
+### **Come Avviare il Tutto**
+
+1.  **Avvia il Backend Server:**
+    *   Apri un terminale e naviga nella cartella `FASTAPI_BACKTESTING_APP/backend`.
+    *   Crea un ambiente virtuale (consigliato): `python -m venv venv` e attivalo.
+    *   Installa le dipendenze: `pip install -r requirements.txt`.
+    *   Avvia il server: `uvicorn main:app --reload`.
+    *   Lascia questo terminale aperto. Il server sarà in ascolto su `http://localhost:8000`.
+
+2.  **Avvia il Frontend Server:**
+    *   Apri un **nuovo terminale** e naviga nella cartella `FASTAPI_BACKTESTING_APP/frontend`.
+    *   Installa le dipendenze: `npm install`.
+    *   Avvia il server di sviluppo: `npm run dev`.
+    *   Lascia anche questo terminale aperto.
+
+3.  **Visualizza l'Applicazione:**
+    *   Apri il tuo browser e vai all'indirizzo fornito dal terminale del frontend (di solito **`http://localhost:5173`**).
+
+Vedrai la tua dashboard pronta per essere usata
+
+                
+                
+                (venv) PS C:\Users\HP\Desktop\FastAPI\FastAPI\backend> uvicorn main:app --reload 
+                (venv) PS C:\Users\HP\Desktop\FastAPI\FastAPI\frontend> npm run dev

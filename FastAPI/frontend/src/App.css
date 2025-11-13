@@ -1,0 +1,27 @@
+/* Stili specifici per il componente App */
+
+.card-header h1, .card-header h2 {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    background-color: #e9ecef;
+}
+
+.img-fluid {
+    max-width: 100%;
+    height: auto;
+}
+
+.border-end {
+    border-right: 1px solid #dee2e6 !important;
+}
+
+@media (max-width: 767px) {
+    .border-end {
+        border-right: none !important;
+        border-bottom: 1px solid #dee2e6 !important;
+        padding-bottom: 1rem !important;
+        margin-bottom: 1rem !important;
+    }
+}
