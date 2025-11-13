@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Form, Button, Card, Spinner, Alert, Table } from 'react-bootstrap';
 import axios from 'axios';
 import './App.css';
 
 const API_URL = 'http://localhost:8000/api/backtest';
+const TICKERS_URL = 'http://localhost:8000/api/tickers';
 
 function App() {
     const [etfs, setEtfs] = useState([{ name: 'VTI', weight: '0.6' }, { name: 'VXUS', weight: '0.4' }]);
@@ -11,6 +12,22 @@ function App() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [results, setResults] = useState(null);
+    const [availableTickers, setAvailableTickers] = useState([]);
+    const [tickerCategories, setTickerCategories] = useState({});
+
+    // Carica i ticker disponibili all'avvio
+    useEffect(() => {
+        const fetchTickers = async () => {
+            try {
+                const response = await axios.get(TICKERS_URL);
+                setAvailableTickers(response.data.all_tickers);
+                setTickerCategories(response.data.categories);
+            } catch (err) {
+                console.error('Errore nel caricamento dei ticker:', err);
+            }
+        };
+        fetchTickers();
+    }, []);
 
     const handleAddField = (type) => {
         const setter = type === 'etf' ? setEtfs : setBenchmark;
@@ -67,7 +84,23 @@ function App() {
                                 <h2>Il Tuo Portafoglio ETF</h2>
                                 {etfs.map((etf, i) => (
                                     <Row key={i} className="mb-2 align-items-center">
-                                        <Col><Form.Control type="text" name="name" placeholder="Ticker (es. VTI)" value={etf.name} onChange={e => handleInputChange(i, e, 'etf')} required /></Col>
+                                        <Col>
+                                            <Form.Select 
+                                                name="name" 
+                                                value={etf.name} 
+                                                onChange={e => handleInputChange(i, e, 'etf')} 
+                                                required
+                                            >
+                                                <option value="">Seleziona un ticker...</option>
+                                                {Object.entries(tickerCategories).map(([category, tickers]) => (
+                                                    <optgroup key={category} label={category}>
+                                                        {tickers.map(ticker => (
+                                                            <option key={ticker} value={ticker}>{ticker}</option>
+                                                        ))}
+                                                    </optgroup>
+                                                ))}
+                                            </Form.Select>
+                                        </Col>
                                         <Col><Form.Control type="number" name="weight" placeholder="Peso (es. 0.6)" value={etf.weight} onChange={e => handleInputChange(i, e, 'etf')} required step="0.01" min="0" /></Col>
                                     </Row>
                                 ))}
@@ -77,7 +110,23 @@ function App() {
                                 <h2>Benchmark</h2>
                                 {benchmark.map((b, i) => (
                                     <Row key={i} className="mb-2 align-items-center">
-                                        <Col><Form.Control type="text" name="name" placeholder="Ticker (es. SPY)" value={b.name} onChange={e => handleInputChange(i, e, 'benchmark')} required /></Col>
+                                        <Col>
+                                            <Form.Select 
+                                                name="name" 
+                                                value={b.name} 
+                                                onChange={e => handleInputChange(i, e, 'benchmark')} 
+                                                required
+                                            >
+                                                <option value="">Seleziona un ticker...</option>
+                                                {Object.entries(tickerCategories).map(([category, tickers]) => (
+                                                    <optgroup key={category} label={category}>
+                                                        {tickers.map(ticker => (
+                                                            <option key={ticker} value={ticker}>{ticker}</option>
+                                                        ))}
+                                                    </optgroup>
+                                                ))}
+                                            </Form.Select>
+                                        </Col>
                                         <Col><Form.Control type="number" name="weight" placeholder="Peso (es. 1.0)" value={b.weight} onChange={e => handleInputChange(i, e, 'benchmark')} required step="0.01" min="0" /></Col>
                                     </Row>
                                 ))}

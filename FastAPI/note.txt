@@ -20,5 +20,4 @@ Vedrai la tua dashboard pronta per essere usata
 
                 
                 
-                (venv) PS C:\Users\HP\Desktop\FastAPI\FastAPI\backend> uvicorn main:app --reload 
-                (venv) PS C:\Users\HP\Desktop\FastAPI\FastAPI\frontend> npm run dev
+                
