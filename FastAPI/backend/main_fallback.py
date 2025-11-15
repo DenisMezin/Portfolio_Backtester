@@ -5,9 +5,7 @@ from datetime import datetime
 from io import StringIO
 from typing import Dict, List, Optional
 
-import plotly.graph_objects as go
-import plotly.express as px
-import plotly.utils
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
@@ -25,10 +23,11 @@ class Etf(BaseModel):
     ter: float = 0.0  # Total Expense Ratio (%) annuale
 
 class BacktestConfig(BaseModel):
-    start_date: str = "1990-01-01"
+    start_date: str = "2010-01-01"
     end_date: str = datetime.now().strftime('%Y-%m-%d')
     initial_investment: float = 10000
     rebalance_frequency: str = "quarterly"  # monthly, quarterly, yearly, none
+    transaction_cost: float = 0.001  # 0.1% per trade
     reinvest_dividends: bool = True
 
 class PortfolioPayload(BaseModel):
@@ -114,8 +113,8 @@ class AdvancedPortfolioAnalyzer:
             portfolio_metrics = self._calculate_advanced_metrics(portfolio_returns)
             benchmark_metrics = self._calculate_advanced_metrics(benchmark_returns)
             
-            # Grafici interattivi
-            plots = self._create_interactive_plots(
+            # Grafici matplotlib (fallback)
+            plots = self._create_matplotlib_plots(
                 portfolio_cumulative, benchmark_cumulative, 
                 portfolio_returns, benchmark_returns
             )
@@ -195,106 +194,79 @@ class AdvancedPortfolioAnalyzer:
             "total_return": round((1 + returns).prod() - 1, 4)
         }
     
-    def _create_interactive_plots(self, portfolio_cum, benchmark_cum, portfolio_returns, benchmark_returns):
-        """Crea grafici interattivi usando Plotly."""
+    def _create_matplotlib_plots(self, portfolio_cum, benchmark_cum, portfolio_returns, benchmark_returns):
+        """Crea grafici usando matplotlib (fallback quando plotly non è disponibile)."""
         
         # 1. Performance Cumulativa
-        performance_fig = go.Figure()
-        performance_fig.add_trace(go.Scatter(
-            x=portfolio_cum.index,
-            y=portfolio_cum.values,
-            mode='lines',
-            name='Portfolio',
-            line=dict(color='blue', width=2),
-            hovertemplate='<b>Portfolio</b><br>Data: %{x}<br>Valore: $%{y:,.2f}<extra></extra>'
-        ))
-        performance_fig.add_trace(go.Scatter(
-            x=benchmark_cum.index,
-            y=benchmark_cum.values,
-            mode='lines',
-            name='Benchmark',
-            line=dict(color='orange', width=2),
-            hovertemplate='<b>Benchmark</b><br>Data: %{x}<br>Valore: $%{y:,.2f}<extra></extra>'
-        ))
-        performance_fig.update_layout(
-            title='Performance Cumulativa: Portfolio vs Benchmark',
-            xaxis_title='Data',
-            yaxis_title='Valore ($)',
-            template='plotly_white',
-            height=500
-        )
+        fig1, ax1 = plt.subplots(figsize=(12, 8))
+        ax1.plot(portfolio_cum.index, portfolio_cum.values, label='Portfolio', color='blue', linewidth=2)
+        ax1.plot(benchmark_cum.index, benchmark_cum.values, label='Benchmark', color='orange', linewidth=2)
+        ax1.set_title('Performance Cumulativa: Portfolio vs Benchmark', fontsize=16)
+        ax1.set_xlabel('Data', fontsize=12)
+        ax1.set_ylabel('Valore ($)', fontsize=12)
+        ax1.legend()
+        ax1.grid(True, alpha=0.3)
+        plt.tight_layout()
+        performance_plot = self._fig_to_base64(fig1)
         
         # 2. Drawdown
         portfolio_cum_norm = portfolio_cum / portfolio_cum.iloc[0]
         running_max = portfolio_cum_norm.cummax()
         drawdown = (portfolio_cum_norm - running_max) / running_max
         
-        drawdown_fig = go.Figure()
-        drawdown_fig.add_trace(go.Scatter(
-            x=drawdown.index,
-            y=drawdown.values * 100,
-            mode='lines',
-            fill='tonexty',
-            name='Drawdown',
-            line=dict(color='red'),
-            fillcolor='rgba(255, 0, 0, 0.3)',
-            hovertemplate='<b>Drawdown</b><br>Data: %{x}<br>Drawdown: %{y:.2f}%<extra></extra>'
-        ))
-        drawdown_fig.update_layout(
-            title='Portfolio Drawdown',
-            xaxis_title='Data',
-            yaxis_title='Drawdown (%)',
-            template='plotly_white',
-            height=400
-        )
+        fig2, ax2 = plt.subplots(figsize=(12, 6))
+        ax2.fill_between(drawdown.index, drawdown.values * 100, 0, alpha=0.3, color='red')
+        ax2.plot(drawdown.index, drawdown.values * 100, color='darkred', linewidth=1)
+        ax2.set_title('Portfolio Drawdown', fontsize=16)
+        ax2.set_xlabel('Data', fontsize=12)
+        ax2.set_ylabel('Drawdown (%)', fontsize=12)
+        ax2.grid(True, alpha=0.3)
+        plt.tight_layout()
+        drawdown_plot = self._fig_to_base64(fig2)
         
         # 3. Distribuzione Rendimenti
         monthly_returns = portfolio_returns.resample('M').apply(lambda x: (1 + x).prod() - 1)
         
-        distribution_fig = go.Figure()
-        distribution_fig.add_trace(go.Histogram(
-            x=monthly_returns.values * 100,
-            nbinsx=30,
-            name='Rendimenti Mensili',
-            marker_color='steelblue',
-            opacity=0.7,
-            hovertemplate='Rendimento: %{x:.2f}%<br>Frequenza: %{y}<extra></extra>'
-        ))
-        distribution_fig.add_vline(
-            x=monthly_returns.mean() * 100,
-            line_dash="dash",
-            line_color="red",
-            annotation_text=f"Media: {monthly_returns.mean()*100:.1f}%"
-        )
-        distribution_fig.update_layout(
-            title='Distribuzione Rendimenti Mensili',
-            xaxis_title='Rendimento (%)',
-            yaxis_title='Frequenza',
-            template='plotly_white',
-            height=400
-        )
+        fig3, ax3 = plt.subplots(figsize=(10, 6))
+        ax3.hist(monthly_returns * 100, bins=30, alpha=0.7, color='steelblue', edgecolor='black')
+        ax3.axvline(monthly_returns.mean() * 100, color='red', linestyle='--', linewidth=2, 
+                    label=f'Media: {monthly_returns.mean()*100:.1f}%')
+        ax3.set_title('Distribuzione Rendimenti Mensili', fontsize=16)
+        ax3.set_xlabel('Rendimento (%)', fontsize=12)
+        ax3.set_ylabel('Frequenza', fontsize=12)
+        ax3.legend()
+        ax3.grid(True, alpha=0.3)
+        plt.tight_layout()
+        distribution_plot = self._fig_to_base64(fig3)
         
         # 4. Asset Allocation Pie Chart
-        allocation_fig = go.Figure()
-        allocation_fig.add_trace(go.Pie(
-            labels=[etf.name for etf in self.etfs],
-            values=[etf.weight for etf in self.etfs],
-            name="Allocazione",
-            hovertemplate='<b>%{label}</b><br>Peso: %{percent}<br>TER: %{customdata:.2f}%<extra></extra>',
-            customdata=[etf.ter for etf in self.etfs]
-        ))
-        allocation_fig.update_layout(
-            title='Allocazione Portfolio',
-            template='plotly_white',
-            height=400
-        )
+        fig4, ax4 = plt.subplots(figsize=(8, 8))
+        labels = [etf.name for etf in self.etfs]
+        sizes = [etf.weight for etf in self.etfs]
+        colors = plt.cm.Set3(np.linspace(0, 1, len(labels)))
+        
+        wedges, texts, autotexts = ax4.pie(sizes, labels=labels, autopct='%1.1f%%', 
+                                          startangle=90, colors=colors)
+        ax4.set_title('Allocazione Portfolio', fontsize=16)
+        plt.tight_layout()
+        allocation_plot = self._fig_to_base64(fig4)
         
         return {
-            "performance": json.loads(plotly.utils.PlotlyJSONEncoder().encode(performance_fig)),
-            "drawdown": json.loads(plotly.utils.PlotlyJSONEncoder().encode(drawdown_fig)),
-            "distribution": json.loads(plotly.utils.PlotlyJSONEncoder().encode(distribution_fig)),
-            "allocation": json.loads(plotly.utils.PlotlyJSONEncoder().encode(allocation_fig))
+            "performance": performance_plot,
+            "drawdown": drawdown_plot,
+            "distribution": distribution_plot,
+            "allocation": allocation_plot
         }
+    
+    def _fig_to_base64(self, fig):
+        """Converte una figura matplotlib in stringa base64."""
+        buffer = io.BytesIO()
+        fig.savefig(buffer, format='png', dpi=150, bbox_inches='tight')
+        buffer.seek(0)
+        img_base64 = base64.b64encode(buffer.read()).decode()
+        buffer.close()
+        plt.close(fig)
+        return img_base64
 
 
 # --- Endpoint API ---
@@ -330,7 +302,7 @@ async def get_available_tickers():
 @app.post("/api/backtest")
 async def run_portfolio_backtest(payload: PortfolioPayload):
     """
-    Esegue il backtesting avanzato di un portafoglio con grafici interattivi.
+    Esegue il backtesting avanzato di un portafoglio con grafici.
     """
     try:
         analyzer = AdvancedPortfolioAnalyzer(

@@ -4,3 +4,7 @@ node_modules/
 .env
 venv/
 start_servers.bat
+.idea/
+install_react_plotly.bat
+run_fallback.bat
+requirements.txt

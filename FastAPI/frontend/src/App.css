@@ -74,3 +74,6 @@
 .performance-table td {
     vertical-align: middle;
 }
+.performance-table tbody tr:nth-child(odd) {
+    background-color: #f2f2f2;
+}

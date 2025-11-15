@@ -5,11 +5,15 @@ pydantic
 axios
 pandas
 matplotlib
+plotly
 numpy
 scikit-learn
 yahoo-finance
 yfinance
 statsmodels
+plotly-express
+plotly
+quant-reporter
 
 #nodejs
 #npm
