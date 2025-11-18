@@ -2,201 +2,178 @@
 
 Un sistema avanzato di backtesting per portafogli di ETF con interfaccia web moderna e API robusta.
 
-## 🚀 Funzionalità
+## Funzionalità
 
-### ✨ Funzionalità Avanzate di Backtesting
-- **Ribilanciamento Periodico**: Mensile, trimestrale, annuale
-- **Costi di Transazione**: Simulazione realistica dei costi
-- **Metriche Avanzate**: Sharpe Ratio, Sortino Ratio, Calmar Ratio, VaR, Beta
-- **Analisi del Rischio**: Maximum Drawdown, volatilità, downside deviation
-- **Confronto con Benchmark**: Performance relativa e assoluta
+### Backtesting Avanzato
 
-### 📊 Visualizzazioni
-- **Grafico Performance Cumulativa**: Confronto portafoglio vs benchmark
-- **Grafico Drawdown**: Analisi del rischio di perdita
-- **Distribuzione Rendimenti**: Istogramma dei rendimenti mensili
-- **Tabella Metriche**: Confronto dettagliato delle performance
+- Ribilanciamento periodico (mensile, trimestrale, annuale)
+- Simulazione realistica dei costi di transazione
+- Calcolo metriche complete: Sharpe Ratio, Sortino Ratio, Calmar Ratio, VaR, Beta
+- Analisi del rischio: Maximum Drawdown, volatilità, downside deviation
+- Confronto performance con benchmark
 
-### 🎯 Interfaccia User-Friendly
-- **Menu a Tendina per Ticker**: Oltre 80 ETF organizzati per categoria
-- **Preset di Portafogli**: Conservative, Balanced, Aggressive, Three Fund
-- **Configurazione Avanzata**: Date personalizzabili, investimento iniziale, costi
-- **Export Risultati**: Scarica i dati in formato CSV
-- **Indicatori di Stato**: Connessione backend in tempo reale
+### Visualizzazioni
 
-## 🛠️ Installazione
+- Grafico performance cumulativa con confronto vs benchmark
+- Analisi dei drawdown nel tempo
+- Istogramma dei rendimenti mensili
+- Tabella dettagliata delle metriche comparative
 
-### Prerequisiti
+### Interfaccia
+
+- Selezione da oltre 80 ETF organizzati per categoria
+- Preset di portafogli predefiniti (Conservative, Balanced, Aggressive, Three Fund)
+- Configurazione personalizzabili per date, investimento iniziale e costi
+- Export risultati in formato CSV
+- Indicatori di stato della connessione backend in tempo reale
+
+## Setup Iniziale
+
+### Requisiti
+
+Assicurati di avere installato:
+
 - Python 3.8+
 - Node.js 14+
-- npm o yarn
+- npm
 
-### 1. Clona il Repository
-```bash
-git clone <repository-url>
-cd FastAPI
-```
+### Configurazione Backend
 
-### 2. Setup Backend
 ```bash
 cd FastAPI/backend
 pip install -r requirements.txt
 ```
 
-### 3. Setup Frontend
+### Configurazione Frontend
+
 ```bash
-cd ../frontend
+cd FastAPI/frontend
 npm install
 ```
 
-## 🚀 Avvio Rapido
+## Utilizzo
 
-### Opzione 1: Script Automatico (Windows)
+### Avvio del Sistema
+
+Per avviare entrambi i server:
+
 ```bash
-# Dalla cartella principale del progetto
 start_servers.bat
 ```
 
-### Opzione 2: Avvio Manuale
+Accedi all'applicazione su `http://localhost:3000`
 
-#### Avvia Backend
-```bash
-cd FastAPI/backend
-python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+### Accesso ai Servizi
+
+- Interfaccia Frontend: `http://localhost:3000`
+- API Backend: `http://localhost:8000`
+- Documentazione API: `http://localhost:8000/docs`
+
+## Funzionamento
+
+### Configurazione del Backtest
+
+- Definire il periodo di analisi
+- Specificare l'investimento iniziale
+- Selezionare la frequenza di ribilanciamento
+- Impostare i costi di transazione
+
+### Selezione del Portafoglio
+
+Il sistema offre due approcci:
+
+1. Utilizzo dei preset (Conservative, Balanced, Aggressive, Three Fund)
+2. Configurazione manuale degli asset con allocazione percentuale personalizzata
+
+### Definizione del Benchmark
+
+Scegli uno o più ETF come riferimento per il confronto. Esempi comuni:
+
+- VT: Total World Stock
+- SPY: S&P 500
+- BND: Bond Aggregate
+
+### Analisi dei Risultati
+
+Visualizza le metriche di performance, i grafici interattivi e scarica i dati in CSV.
+
+## Categorie ETF
+
+Il sistema include ETF organizzati per categoria:
+
+- **Mercati**: VTI, SPY, VXUS, VWO, QQQ
+- **Obbligazioni**: BND, AGG, TLT
+- **Immobiliare**: VNQ, IYR
+- **Settori**: VGT, XLK, FSELX
+- **Small Cap**: VB, IWM
+- **Dividendi**: VYM, NOBL, SCHD
+- **Commodities**: DJP, PDBC, GSG
+- **Metalli Preziosi**: GLD, IAU, SGOL
+- **Criptovalute**: BITO, GBTC
+
+## API
+
+### Endpoint Principali
+
+```
+GET /api/tickers
+Restituisce la lista completa dei ticker disponibili
+
+GET /api/ticker-info/{ticker}
+Informazioni dettagliate su un ticker specifico
+
+POST /api/backtest
+Esegue l'analisi di backtesting
+
+POST /api/export-csv
+Genera l'esportazione CSV dei risultati
+
+GET /api/health
+Verifica lo stato del backend
 ```
 
-#### Avvia Frontend (nuovo terminale)
-```bash
-cd FastAPI/frontend
-npm start
-```
+## Portafogli Esempio
 
-## 🌐 Accesso
+### Conservative
 
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000
-- **Documentazione API**: http://localhost:8000/docs
+- 60% BND (Obbligazioni)
+- 30% VTI (Mercato USA)
+- 10% VXUS (Internazionale)
 
-## 📋 Come Utilizzare
+### Balanced
 
-### 1. Configurazione Backtest
-- **Date**: Seleziona periodo di analisi
-- **Investimento Iniziale**: Importo di partenza (default: $10,000)
-- **Frequenza Ribilanciamento**: None, Mensile, Trimestrale, Annuale
-- **Costi Transazione**: Percentuale per operazione (default: 0.1%)
+- 60% VTI (Mercato USA)
+- 30% VXUS (Internazionale)
+- 10% BND (Obbligazioni)
 
-### 2. Selezione Portafoglio
-- **Preset Rapidi**: Conservative, Balanced, Aggressive, Three Fund
-- **Selezione Manuale**: Scegli ETF da menu categorizzato
-- **Peso Assets**: Specifica allocazione percentuale
-- **Rimozione Assets**: Pulsante "Rimuovi" per ogni asset
+### Aggressive
 
-### 3. Benchmark
-- Seleziona uno o più ETF come benchmark di confronto
-- Esempi popolari: VT (Total World), SPY (S&P 500), BND (Bonds)
-
-### 4. Analisi Risultati
-- **Metriche Performance**: CAGR, volatilità, Sharpe ratio, etc.
-- **Grafici Interattivi**: Performance, drawdown, distribuzione
-- **Export Dati**: Scarica risultati completi in CSV
-
-## 📊 Categorie ETF Disponibili
-
-- **US Total Market**: VTI, ITOT, SPTM, VT, FZROX
-- **S&P 500**: SPY, VOO, IVV, SPLG, FXAIX
-- **International Developed**: VXUS, IEFA, VEA, FZILX
-- **Emerging Markets**: VWO, IEMG, EEM, FPADX
-- **Bonds**: BND, AGG, VBTLX, TLT, FXNAX
-- **Real Estate**: VNQ, SCHH, IYR, FREL
-- **Technology**: QQQ, VGT, XLK, FSELX
-- **Small Cap**: VB, IWM, VTWO, FSMDX
-- **Value/Growth**: VTV, VUG, FVAL, FSPGX
-- **Dividend**: VYM, NOBL, SCHD, FDVV
-- **Commodities**: DJP, PDBC, GSG, FCOM
-- **Gold**: GLD, IAU, SGOL, AAAU
-- **Crypto**: BITO, GBTC, ETHE
-
-## 🔧 API Endpoints
-
-- `GET /api/tickers` - Lista ticker disponibili
-- `GET /api/ticker-info/{ticker}` - Informazioni dettagliate ticker
-- `POST /api/backtest` - Esegui backtesting
-- `POST /api/export-csv` - Esporta risultati CSV
-- `GET /api/health` - Health check
-
-## 🎯 Esempi di Portafogli
-
-### Conservative (Basso Rischio)
-- 60% BND (Bonds)
-- 30% VTI (US Total Market)
-- 10% VXUS (International)
-
-### Balanced (Rischio Moderato)
-- 60% VTI (US Total Market)
-- 30% VXUS (International)
-- 10% BND (Bonds)
-
-### Aggressive (Alto Rischio)
-- 70% VTI (US Total Market)
-- 20% VXUS (International)
+- 70% VTI (Mercato USA)
+- 20% VXUS (Internazionale)
 - 10% VB (Small Cap)
 
 ### Three Fund Portfolio
-- 60% VTI (US Total Market)
-- 30% VXUS (International)
-- 10% BND (Bonds)
 
-## 🛡️ Limitazioni
+- 60% VTI (Mercato USA)
+- 30% VXUS (Internazionale)
+- 10% BND (Obbligazioni)
 
-- Dati storici limitati alla disponibilità di Yahoo Finance
-- Non include costi di gestione dei fondi
-- Simulazione semplificata dei costi di transazione
-- Non considera tasse su capital gains
+## Limitazioni
 
-## 🆘 Troubleshooting
+- I dati storici dipendono dalla disponibilità di Yahoo Finance
+- I costi di gestione dei fondi non sono inclusi nella simulazione
+- I costi di transazione sono semplificati
+- Le tasse su capital gains non sono considerate
 
-### Backend non si avvia
-```bash
-# Verifica installazione dipendenze
-pip install -r requirements.txt
+## Sviluppi Futuri
 
-# Verifica porta disponibile
-netstat -an | findstr :8000
-```
+- Supporto per azioni individuali
+- Analisi di correlazione tra asset
+- Simulazioni Monte Carlo
+- Portfolio optimization con metodo Markowitz
+- Risk parity strategies
+- Miglioramenti responsive design
 
-### Frontend non si connette al Backend
-- Verifica che il backend sia in esecuzione su porta 8000
-- Controlla l'indicatore di stato nell'interfaccia
-- Verifica CORS settings nel backend
+## Licenza
 
-### Errori sui Dati
-- Alcuni ticker potrebbero non essere disponibili
-- Periodi troppo lunghi potrebbero causare timeout
-- Verifica connessione internet per download dati
-
-## 📈 Prossimi Sviluppi
-
-- [ ] Supporto azioni individuali
-- [ ] Analisi di correlazione tra assets
-- [ ] Monte Carlo simulation
-- [ ] Backtesting con dividendi storici reali
-- [ ] Portfolio optimization (Markowitz)
-- [ ] Risk parity strategies
-- [ ] Mobile responsive design improvements
-
-## 📄 Licenza
-
-MIT License - Vedi file LICENSE per dettagli.
-
-## 🤝 Contributi
-
-I contributi sono benvenuti! Per favore:
-1. Fork del progetto
-2. Crea feature branch
-3. Commit delle modifiche
-4. Push al branch
-5. Apri Pull Request
-
----
-
-**Sviluppato con ❤️ usando FastAPI, React, e le migliori pratiche di sviluppo moderno.**
+MIT License
